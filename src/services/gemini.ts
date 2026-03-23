@@ -1,7 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-
 export interface Quote {
   text: string;
   author: string;
@@ -9,7 +7,26 @@ export interface Quote {
   explanation: string;
 }
 
+const getAiInstance = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("GEMINI_API_KEY is not defined. Using fallback data.");
+  }
+  return new GoogleGenAI({ apiKey: apiKey || "dummy-key" });
+};
+
 export async function generateDailyQuote(): Promise<Quote> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return {
+      text: "어제보다 나은 내일이 아닌, 오늘보다 행복한 지금을 사세요.",
+      author: "인생의 지혜",
+      category: "행복",
+      explanation: "미래를 위해 현재를 희생하기보다 지금 이 순간의 소중함을 깨닫는 것이 진정한 행복의 시작입니다."
+    };
+  }
+
+  const ai = getAiInstance();
   const model = "gemini-3-flash-preview";
   
   const prompt = `Generate a deeply inspiring and meaningful "Life Quote" in Korean. 
@@ -51,7 +68,11 @@ export async function generateDailyQuote(): Promise<Quote> {
 }
 
 export async function generateQuoteImage(prompt: string): Promise<string | null> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
   try {
+    const ai = getAiInstance();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
