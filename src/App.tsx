@@ -6,23 +6,31 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, RefreshCw, Share2, Quote as QuoteIcon, Heart } from 'lucide-react';
-import { generateDailyQuote, Quote } from './services/gemini';
+import { generateDailyQuote, generateQuoteImage, Quote } from './services/gemini';
 
 export default function App() {
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
 
   const fetchQuote = async () => {
     setIsRefreshing(true);
+    setImageLoading(true);
     try {
       const newQuote = await generateDailyQuote();
       setQuote(newQuote);
+      setLoading(false);
+      
+      // Generate image based on quote
+      const img = await generateQuoteImage(`${newQuote.category}: ${newQuote.text}`);
+      setImageUrl(img);
     } catch (error) {
       console.error("Failed to fetch quote", error);
     } finally {
-      setLoading(false);
       setIsRefreshing(false);
+      setImageLoading(false);
     }
   };
 
@@ -61,7 +69,7 @@ export default function App() {
             <Sparkles className="w-5 h-5 text-emerald-400" />
             <span className="text-xs uppercase tracking-[0.3em] font-medium text-emerald-400/80">Daily Inspiration</span>
           </div>
-          <h1 className="text-3xl font-light tracking-tight serif">오늘의 한 문장</h1>
+          <h1 className="text-3xl font-light tracking-tight serif">Today’s Sentence</h1>
         </motion.header>
 
         <AnimatePresence mode="wait">
@@ -87,6 +95,38 @@ export default function App() {
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
               
+              {/* Image Section */}
+              <div className="relative w-full aspect-video mb-8 rounded-2xl overflow-hidden bg-white/5">
+                <AnimatePresence mode="wait">
+                  {imageLoading ? (
+                    <motion.div 
+                      key="img-loader"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 flex items-center justify-center"
+                    >
+                      <RefreshCw className="w-6 h-6 animate-spin text-white/10" />
+                    </motion.div>
+                  ) : imageUrl ? (
+                    <motion.img
+                      key={imageUrl}
+                      initial={{ opacity: 0, scale: 1.1 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      src={imageUrl}
+                      alt="Quote background"
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/5">
+                      <QuoteIcon className="w-12 h-12" />
+                    </div>
+                  )}
+                </AnimatePresence>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              </div>
+
               <QuoteIcon className="w-10 h-10 text-white/10 mb-8" />
               
               <div className="space-y-8">

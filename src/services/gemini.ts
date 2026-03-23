@@ -49,3 +49,36 @@ export async function generateDailyQuote(): Promise<Quote> {
     };
   }
 }
+
+export async function generateQuoteImage(prompt: string): Promise<string | null> {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          {
+            text: `Create a minimalist, atmospheric, and artistic background image for a quote. 
+            Theme: ${prompt}. 
+            Style: Cinematic, soft lighting, deep shadows, high quality, 4k, abstract or nature-inspired. 
+            No text in the image.`,
+          },
+        ],
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: "16:9",
+        },
+      },
+    });
+
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Error generating image:", error);
+    return null;
+  }
+}
